@@ -14,8 +14,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <mega328.h>
-#include <delay.h>
+//#include <mega328.h>
+#define __DELAY_BACKWARD_COMPATIBLE__ 1
+#define F_CPU 16000000 
+#include <util/delay.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 #include <math.h>
 
 #define VERSION 10
@@ -118,7 +122,7 @@ unsigned char k6;
 unsigned char k7;
 unsigned char k8;
 
-uint16_t y0; 
+uint16_t y_zero; 
 uint16_t dy;
 uint16_t expoz;
 uint8_t bining;
@@ -187,7 +191,8 @@ uint16_t resi(void);
 void readDHT22();
 
 /* Interrupt, triggered when new command arrives */
-interrupt [PC_INT0] void pcint0(void)
+//interrupt [PC_INT0] void pcint0(void)
+ISR(PCINT0_vect)
 {
     PCMSK0 = 0x00;
     parcom = resi();
@@ -210,7 +215,7 @@ interrupt [PC_INT0] void pcint0(void)
             break;
         //ROI, StartY
         case COMMAND_SET_ROISTARTY:
-            y0 = parcom;
+            y_zero = parcom;
             break;
         //ROI, NumY
         case COMMAND_SET_ROINUMY:
@@ -584,7 +589,7 @@ void PIDLoop (void)
             lastE = 0.0;
             accE = 0.0;
             PORTB &=~0x01;
-            delay_ms(CYCLE);
+            _delay_ms(CYCLE);
         }
         else
         {
@@ -602,23 +607,25 @@ void PIDLoop (void)
             {
                 PORTB |= 0x01;    
             }
-            delay_ms(U);                              
+            _delay_ms(U);                              
             if (((uint16_t) U)!= CYCLE)
             {
                 PORTB &=~0x01;
             }
-            delay_ms(CYCLE-U); 
+            _delay_ms(CYCLE-U); 
             coolerPower=((uint8_t)(U/4.0));
         }
         //critical section
-        #asm("cli");
+        // #asm("cli");
+        cli();
         sensorTempOutBuffer = sensorTemp;
         coolerPowerOutBuffer = coolerPower;
         coolerOn = coolerOnInBuffer;
         targetTemp = targetTempInBuffer;
         sensorTempDHTOutBuffer = DHT22_Data.Temperature;
         sensorHumOutBuffer = DHT22_Data.Humidity;
-        #asm("sei");
+        // #asm("sei");
+	sei();
     }
 }
 
@@ -633,7 +640,7 @@ void initCamera (void)
     k0 = 0x14;
     k1 = 0x2a;
     bining = 0;
-    y0 = 0;
+    y_zero = 0;
     dy = 1000;
     expoz = 0;
     delay = 0;
@@ -672,7 +679,7 @@ void main(void)
     //init temperature sensor, perform first reading
     initDS12B20();
     readDS12B20();
-    delay_ms(800);//1200);
+    _delay_ms(800);//1200);
     //readDS12B20();
     //delay_ms(1200);
     
@@ -687,7 +694,8 @@ void main(void)
     // set PCINT5 to trigger an interrupt on state change
     PCMSK0 = 0x20;
     // turn on interrupts
-    #asm("sei");
+    // #asm("sei");
+    sei();
 
     PIDLoop();
 }
@@ -726,7 +734,7 @@ void frame(void)
 
     //сброс первых 24 строк+ ROI и очистка горизонтального регистра
     // Reset the first 24 rows + ROI and cleaning of the horizontal register
-    y = 10+y0;
+    y = 10+y_zero;
     do
     {
         shift();
@@ -811,7 +819,9 @@ void frame(void)
         pixel40
         pixel4
         zad3();
-    }while (--y);
+
+        --y;
+    }while (y);
 }
 
 void shift(void)
