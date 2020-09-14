@@ -54,23 +54,10 @@ typedef unsigned int uint16_t;
                PORTC = k5; \
                PORTC = k6; \
                PORTC = k7; 
-#define pixel8 pixel4 \
-               pixel4
-#define pixel40 pixel8 \
-                pixel8 \
-                pixel8 \
-                pixel8 \
-                pixel8      
-#define pixel200 pixel40 \
-                 pixel40 \
-                 pixel40 \
-                 pixel40 \
-                 pixel40    
-#define pixel1000 pixel200 \
-                  pixel200 \
-                  pixel200 \
-                  pixel200 \
-                  pixel200  
+#define pixel8 for (int i = 0; i < 2; i++) { pixel4 }
+#define pixel40 for (int i = 0; i < 10; i++) { pixel4 }
+#define pixel200 for (int i = 0; i < 20; i++) { pixel4 }
+#define pixel1000 for (int i = 0; i < 50; i++) { pixel4 }
                   
 #define DHT22_BIT 0x02
 #define DHT22_SET PORTB |= DHT22_BIT   
