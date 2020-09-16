@@ -54,10 +54,11 @@ typedef unsigned int uint16_t;
                PORTC = k5; \
                PORTC = k6; \
                PORTC = k7; 
-#define pixel8 for (int i = 0; i < 2; i++) { pixel4 }
-#define pixel40 for (int i = 0; i < 10; i++) { pixel4 }
-#define pixel200 for (int i = 0; i < 20; i++) { pixel4 }
-#define pixel1000 for (int i = 0; i < 50; i++) { pixel4 }
+
+#define pixel8    int i = 2;   do { pixel4 } while (--i)
+#define pixel40   int i = 10;  do { pixel4 } while (--i)
+#define pixel200  int i = 50;  do { pixel4 } while (--i)
+#define pixel1000 int i = 250; do { pixel4 } while (--i)
                   
 #define DHT22_BIT 0x02
 #define DHT22_SET PORTB |= DHT22_BIT   
@@ -737,135 +738,131 @@ void frame(void)
     k8 = 0x28;
     do
     {
-        shift();
-        k0 = 0x14;
-        //выключен s2, нет импульсов записи
-        // Off s2, no write pulse
-        k1 = 0x28;
-        k2 = 0x14;
-        k3 = 0x28;
-        k4 = 0x14; 
-        k5 = 0x28;
-        k6 = 0x14; 
-        k7 = 0x28;
-        pixel40
-        pixel8
+        shift();   // move an image line into the horizontal shift register
 
-        k0 = 0x14;
-        k1 = 0x2a;
-        k2 = 0x14;
-        k3 = 0x2a;
-        k4 = 0x14;
-        k5 = 0x2a;
-        k6 = 0x14;
-        k7 = 0x2a;
-        //4 pix пустых (ad9826)
-        // 4 pix blank (ad9826)
-        pixel4
+        {
+                       // |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
+                       // |  x  |  x  | s0  | s1  | ck2 | s3  | s2  |  x  |
+            k0 = 0x14; // |     |     |     |  1  |     |  1  |     |     | (no write pulse)
+            k1 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k2 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k3 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k4 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k5 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k6 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k7 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
 
-        if (bining == FALSE)
-        {
-            k0 = 0x14;
-            k1 = 0x2a;
-            k2 = 0x14;
-            k3 = 0x2a;
-            k4 = 0x14; 
-            k5 = 0x2a;
-            k6 = 0x14; 
-            k7 = 0x2a;
-        } else
-        {
-            k0 = 0x14;
-            k1 = 0x2a;
-            k2 = 0x1a;
-            k3 = 0x2a;
-            k4 = 0x1a; 
-            k5 = 0x2a;
-            k6 = 0x1a;
-            k7 = 0x2a;
+            pixel40    // ignore 48 pixels
+            pixel8
+
+            k0 = 0x14; // |     |     |     |  1  |     |  1  |     |     | 
+            k1 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k2 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k3 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k4 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k5 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k6 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k7 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+        
+            pixel4     // write 4 pix blank (ad9826)
         }
-        pixel1000
-        pixel1000
-        pixel1000
-        pixel1000
-        pixel1000
-        pixel1000
-        PORTC = k8; 
+        
+        if ( bining == TRUE )  // Holding clk2 high allows ADC input cap to accumulate charge?? Looks sus!
+        {
+            k0 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k1 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k2 = 0x1a; // |     |     |     |  1  |  1  |     |  1  |     |
+            k3 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k4 = 0x1a; // |     |     |     |  1  |  1  |     |  1  |     | 
+            k5 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+            k6 = 0x1a; // |     |     |     |  1  |  1  |     |  1  |     |
+            k7 = 0x2a; // |     |     |  1  |     |  1  |     |  1  |     |
+        }
+        {
+            pixel1000  // 6000 pixels -- or is it 3000 (two writes per 16bit result)?
+            pixel1000
+            pixel1000
+            pixel1000
+            pixel1000
+            pixel1000
 
-        k0 = 0x14;
-        //выключен s2, нет импульсов записи
-        // Off s2, no write pulse
-        k1 = 0x28;
-        k2 = 0x14;
-        k3 = 0x28;
-        k4 = 0x14; 
-        k5 = 0x28;
-        k6 = 0x14; 
-        k7 = 0x28;
-        pixel40
-        pixel40
-        pixel4
-        zad3();
+            PORTC = k8;// |     |     |  1  |     |  1  |     |  1  |     | 
 
-        --y;
-    }while (y);
+        {
+            k0 = 0x14; // |     |     |     |  1  |     |  1  |     |     | (no write pulse)
+            k1 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k2 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k3 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k4 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k5 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+            k6 = 0x14; // |     |     |     |  1  |     |  1  |     |     |
+            k7 = 0x28; // |     |     |  1  |     |  1  |     |     |     |
+        
+            pixel40    // ignore 84 pixels (or is it 42?
+            pixel40
+            pixel4
+
+            zad3();    // delay ??
+         }
+    } while (--y);
 }
 
 void shift(void)
 {
-    PORTD = 0xcb;
-    zad();
-    PORTD = 0xdb;
-    zad();
-    PORTD = 0xda;
-    zad();
-    PORTD = 0xfa;
-    zad();
-    PORTD = 0xea;
-    zad();
-    PORTD = 0xee;
-    zad();
-    PORTD = 0xce;
-    zad();
-    PORTD = 0xcf;
-    zad();
+// Hex bit patterns
+// A = 1010
+// B = 1011
+// C = 1100
+// D = 1101
+// E = 1110
+// F = 1111
+
+                          // | UPS | VSUB | V4 | V3 | V2 | V1 |
+    PORTD = 0xcb; zad();  // |  1  |   H  |  L | M  |  M | M  |    1100 1011 
+    PORTD = 0xdb; zad();  // |  1  |   H  |  L | M  |  L | L  |    1101 1011
+    PORTD = 0xda; zad();  // |  1  |   H  |  M | M  |  L | L  |    1101 1010
+    PORTD = 0xfa; zad();  // |  1  |   H  |  M | M  |  L | L  |    1111 1010
+    PORTD = 0xea; zad();  // |  1  |   H  |  M | M  |  M | M  |    1110 1010
+    PORTD = 0xee; zad();  // |  1  |   H  |  M | L  |  M | M  |    1110 1110
+    PORTD = 0xce; zad();  // |  1  |   H  |  M | M  |  M | M  |    1100 1110
+    PORTD = 0xcf; zad();  // |  1  |   H  |  L | M  |  M | M  |    1100 1111
 }
 
 void shift2(void)
 {
     shift();
 
-    PORTD = 0xc7;zad();
-    PORTD = 0xc7;zad();
-    PORTD = 0xc7;zad();
-    PORTD = 0xc7;zad();
+    PORTD = 0xc7; zad();  // |  1  |   H  |  L | M  |  M | H  |    1100 0111
+    PORTD = 0xc7; zad();  // |  1  |   H  |  L | M  |  M | H  |    1100 0111
+    PORTD = 0xc7; zad();  // |  1  |   H  |  L | M  |  M | H  |    1100 0111
+    PORTD = 0xc7; zad();  // |  1  |   H  |  L | M  |  M | H  |    1100 0111
 
-    PORTD = 0xcb;zad();
+    PORTD = 0xcb; zad();  // |  1  |   H  |  L | Z  |  M | M  |    1100 1101
 
-    PORTD = 0xd9;zad();
-    PORTD = 0xd9;zad();
-    PORTD = 0xd9;zad();
-    PORTD = 0xd9;zad();
+    PORTD = 0xd9; zad();  // |  1  |   H  |  L | H  |  L | L  |    1101 1001
+    PORTD = 0xd9; zad();  // |  1  |   H  |  L | H  |  L | L  |    1101 1001
+    PORTD = 0xd9; zad();  // |  1  |   H  |  L | H  |  L | L  |    1101 1001
+    PORTD = 0xd9; zad();  // |  1  |   H  |  L | H  |  L | L  |    1101 1001
 
-    PORTD = 0xdb;zad();
+    PORTD = 0xdb; zad();  // |  1  |   H  |  L | M  |  L | L  |    1101 1011
 
-    PORTD = 0xfa;zad();
-    PORTD = 0xea;zad();
-    PORTD = 0xee;zad();
-    PORTD = 0xce;zad();
-    PORTD = 0xcf;zad();
+    PORTD = 0xfa; zad();  // |  1  |   H  |  M | M  |  L | L  |    1111 1010
+    PORTD = 0xea; zad();  // |  1  |   H  |  M | M  |  M | M  |    1110 1010
+    PORTD = 0xee; zad();  // |  1  |   H  |  M | L  |  M | M  |    1110 1110
+    PORTD = 0xce; zad();  // |  1  |   H  |  M | M  |  M | M  |    1100 1110
+    PORTD = 0xcf; zad();  // |  1  |   H  |  L | M  |  M | M  |    1100 1111
 }
 
 void shift3(void)
 {
-    PORTD = 0xcb;zad();
-    PORTD = 0xdb;zad();
-    PORTD = 0x9a;zad();
-    PORTD = 0xba;zad();
-    PORTD = 0xaa;zad();
-    PORTD = 0xee;zad();
-    PORTD = 0xce;zad();
-    PORTD = 0xcf;zad();
+    PORTD = 0xcb; zad();  // |  1  |   H  |  L | Z  |  M | M  |    1100 1101
+    PORTD = 0xdb; zad();  // |  1  |   H  |  L | M  |  L | L  |    1101 1011
+    PORTD = 0x9a; zad();  // |  1  |   L  |  M | M  |  L | L  |    1001 1010
+    PORTD = 0xba; zad();  // |  1  |   L  |  M | M  |  L | L  |    1011 1010
+    PORTD = 0xaa; zad();  // |  1  |   L  |  M | M  |  M | M  |    1010 1010
+    PORTD = 0xee; zad();  // |  1  |   H  |  M | L  |  M | M  |    1110 1110
+    PORTD = 0xce; zad();  // |  1  |   H  |  M | M  |  M | M  |    1100 1110
+    PORTD = 0xcf; zad();  // |  1  |   H  |  L | M  |  M | M  |    1100 1111
 }
 
 void zad()
